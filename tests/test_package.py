@@ -1,7 +1,8 @@
-"""Smoke tests for the citywalk2d skeleton.
+"""Smoke tests for the citywalk2d package.
 
 Verifies the package imports cleanly, exposes its version, and that the
-entrypoint runs without error — nothing more, since game logic lands later.
+entrypoint runs without error.  Interactive play needs a terminal, so the
+entrypoint is exercised here through its non-interactive ``--demo`` mode.
 """
 
 import contextlib
@@ -22,15 +23,19 @@ class TestPackageMetadata(unittest.TestCase):
 
         self.assertIsInstance(config.DEFAULT_WIDTH, int)
         self.assertIsInstance(config.DEFAULT_HEIGHT, int)
+        self.assertIsInstance(config.CITY_WIDTH, int)
+        self.assertIsInstance(config.CITY_HEIGHT, int)
+        self.assertIsInstance(config.CITY_SEED, int)
 
 
 class TestEntrypoint(unittest.TestCase):
-    def test_main_returns_zero(self):
+    def test_demo_returns_zero(self):
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            code = entrypoint.main()
+            code = entrypoint.main(["--demo"])
         self.assertEqual(code, 0)
         self.assertIn("citywalk2d", buf.getvalue())
+        self.assertIn("#", buf.getvalue())  # building glyphs in the ASCII city
 
 
 if __name__ == "__main__":

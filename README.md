@@ -15,9 +15,9 @@ is terminal-based color ASCII.
 ```
 citywalk2d/
   __init__.py      package metadata
-  __main__.py      runnable entrypoint (--demo renders a generated city)
-  config.py        central tunables (placeholder)
-  engine/          main loop, clock, state   (reserved)
+  __main__.py      runnable entrypoint (interactive game, --demo, --script)
+  config.py        central tunables (world + viewport defaults)
+  engine/          main game loop (assembles world + input + renderer)
   input/           keyboard input (WASD/arrows -> Action)
   world/           grid model (grid.py), facades, player
   renderer/        color-ASCII frame buffer, camera, scene renderer
@@ -126,7 +126,31 @@ and the player is a highlighted `@`. Reference renders are saved under
 `docs/` (`reference_render.txt` and `reference_render_viewport.txt` hold the
 ANSI frames; the `_plain` variants are human-readable and strip the escapes).
 
+## Engine / game loop
+
+The engine (`citywalk2d/engine`) is the glue that assembles the grid,
+facades, movement, input, and renderer into a single running loop: init the
+world, render the viewport, read an action, move the player one cell,
+re-render, repeat until quit. The core loop is I/O-agnostic so it can be
+driven by a real keyboard (`run_interactive`) or by a scripted sequence of
+actions (`run_script`), which is what the integration test uses.
+
+```python
+from citywalk2d.engine import build_city, run_script
+from citywalk2d.input import Action
+
+city, facades, player = build_city(seed=42)          # grid + facades + player
+frames = run_script(                                  # drive a scripted walk
+    city, facades, player,
+    [Action.RIGHT, Action.RIGHT, Action.DOWN, Action.QUIT],
+    color=False,
+)
+print(player.position, "in", frames, "frames")
+```
+
 ## Run
+
+Play interactively (WASD / arrow keys to move, `q` / Esc / Ctrl-C to quit):
 
 Linux / macOS:
 
@@ -143,14 +167,25 @@ run.bat
 Or directly:
 
 ```
-python3 run.py
+python3 -m citywalk2d
 ```
 
-Render a demo city:
+Render one static demo city:
 
 ```
-python3 run.py --demo
+python3 -m citywalk2d --demo
 ```
+
+Drive the loop headlessly from a script of actions (one per line:
+`up`/`down`/`left`/`right`, WASD letters, or `quit`; `#` comments and blank
+lines are ignored):
+
+```
+python3 -m citywalk2d --script walk.txt --no-color --seed 7
+```
+
+Other options: `--seed N`, `--width W`, `--height H`, `--viewport WxH`,
+`--no-color`.
 
 ## Test
 
@@ -160,6 +195,8 @@ python3 -m unittest discover -s tests
 
 ## Status
 
-Grid model, building facades, player movement, keyboard input mapping, and
-renderer/camera are implemented and covered by unit tests. The main game
-loop (engine) and HUD (ui) are owned by later nodes in tree G10.
+Grid model, building facades, player movement, keyboard input mapping,
+renderer/camera, and the assembled game loop (engine) are implemented and
+covered by unit tests -- including an integration test that drives a scripted
+walk around the city. The HUD (ui) remains owned by a later node in tree
+G10.
