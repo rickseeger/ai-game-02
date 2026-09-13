@@ -49,6 +49,24 @@ for b in city.buildings:    # footprint rect + block membership
 print(city.render())        # '#' building, '.' street, ' ' interior
 ```
 
+## Player & movement
+
+The player lives in `citywalk2d/world/player.py`. `spawn_player(city)` drops a
+player onto a guaranteed street cell; `Player.move(direction)` advances exactly
+one cell per step and only into walkable street cells, so buildings, block
+interiors, and the map edge all block movement. Movement consumes a canonical
+`Direction` (UP / DOWN / LEFT / RIGHT) -- raw key decoding is the input node's
+job.
+
+```python
+from citywalk2d.world import Direction, generate_city, spawn_player
+
+city = generate_city(seed=42)
+player = spawn_player(city)
+moved = player.move(Direction.RIGHT)   # True if the cell was a street cell
+print(player.position)
+```
+
 ## Run
 
 Linux / macOS:
@@ -83,6 +101,6 @@ python3 -m unittest discover -s tests
 
 ## Status
 
-Grid model implemented (streets, blocks, building footprints) and covered by
-unit tests. Facades, movement, input, and renderer are owned by later nodes in
-tree G10.
+Grid model, building facades, and player movement are implemented and
+covered by unit tests. Input mapping (WASD/arrows -> direction) and the
+renderer are owned by later nodes in tree G10.
