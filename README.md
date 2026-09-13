@@ -18,8 +18,9 @@ citywalk2d/
   __init__.py      package metadata
   __main__.py      runnable entrypoint (--demo renders a generated city)
   config.py        central tunables (placeholder)
-  engine/          main loop, clock, input   (reserved)
-  world/           grid model (grid.py), facades, entities
+  engine/          main loop, clock, state   (reserved)
+  input/           keyboard input (WASD/arrows -> Action)
+  world/           grid model (grid.py), facades, player
   renderer/        top-down ASCII output     (reserved)
   ui/              HUD and overlays          (reserved)
 tests/             stdlib unittest suite
@@ -67,6 +68,31 @@ moved = player.move(Direction.RIGHT)   # True if the cell was a street cell
 print(player.position)
 ```
 
+## Keyboard input
+
+The input layer lives in `citywalk2d/input`. It maps raw terminal bytes and
+escape sequences onto a canonical `Action` enum whose movement members carry
+the matching `Direction`:
+
+```python
+from citywalk2d.input import Action, KeyReader
+
+with KeyReader() as keys:
+    action = keys.read()          # blocks for one keypress
+    if action is Action.QUIT:
+        ...
+    elif action is not None:
+        player.move(action.direction)
+```
+
+Recognised keys are WASD (plus their shifted forms) and the arrow keys.
+Arrow keys are decoded from the ANSI escape sequences a POSIX terminal emits
+(`ESC [ A/B/C/D`) and from the virtual-key pairs a Windows console emits
+(`\xe0`/`\x00` followed by `H/P/K/M`). `q`, `Q`, Ctrl-C and Escape all map
+to `Action.QUIT`. The byte -> action table is pure and deterministic and is
+covered by `tests/test_input.py`; the raw terminal reading itself
+(termios / msvcrt) must be exercised interactively on a real keyboard.
+
 ## Run
 
 Linux / macOS:
@@ -101,6 +127,6 @@ python3 -m unittest discover -s tests
 
 ## Status
 
-Grid model, building facades, and player movement are implemented and
-covered by unit tests. Input mapping (WASD/arrows -> direction) and the
-renderer are owned by later nodes in tree G10.
+Grid model, building facades, player movement, and keyboard input mapping
+are implemented and covered by unit tests. The renderer and the main game
+loop are owned by later nodes in tree G10.
