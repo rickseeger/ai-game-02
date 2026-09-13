@@ -28,3 +28,19 @@ FRAME_BUDGET = 1.0 / TARGET_FPS
 # --- Fallbacks ----------------------------------------------------------
 DEFAULT_SIZE = (120, 40)  # headless / non-TTY fallback size
 MIN_SIZE = (80, 24)
+
+# --- Survival loop (DESIGN 7.2) ------------------------------------------
+NEED_START = 100.0            # hunger/thirst start full (100 = full)
+NEED_DECAY_PER_SEC = 1.0 / 60.0   # 1 point per 60 s -> full bar ~100 min
+NEED_LOW = 20.0               # gentle HUD hint at or below this
+MEAL_HUNGER = 35.0            # hunger restored by "eat a meal"
+DRINK_THIRST = 30.0           # thirst restored by "buy a drink"
+MEAL_COST = 8                 # credits for a meal
+DRINK_COST = 5                # credits for a drink
+START_CREDITS = 40
+START_HEALTH = 100.0
+HEALTH_DRAIN_PER_SEC = 0.1    # 1 point / 10 s while a meter sits at 0
+HEALTH_FLOOR = 25.0           # no death by starvation in v1
+FREE_SAMPLES = 4              # free vendor samples keep the economy trivial
+INTERACT_RANGE = 1.6          # cells from a vendor serving cell to interact
+MESSAGE_TTL = 2.5             # seconds a transient HUD message stays visible

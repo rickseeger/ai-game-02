@@ -118,6 +118,8 @@ class Terminal:
             b"q": "turn_left", b"Q": "turn_left",
             b"e": "turn_right", b"E": "turn_right",
             b"\x03": "quit", b"\x04": "quit", b"\x1a": "quit",
+            b"\r": "interact", b"\n": "interact",
+            b"1": "eat", b"2": "drink",
         }
         return m.get(ch)
 
@@ -140,6 +142,7 @@ class Terminal:
             "a": "strafe_left", "A": "strafe_left", "d": "strafe_right",
             "D": "strafe_right", "q": "turn_left", "Q": "turn_left",
             "e": "turn_right", "E": "turn_right",
+            "\r": "interact", "1": "eat", "2": "drink",
         }
         if ch == "\x03":
             return "quit"

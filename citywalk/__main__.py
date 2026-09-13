@@ -4,10 +4,15 @@ Modes:
   python3 run.py                 interactive first-person walk (needs a TTY)
   python3 run.py --demo          headless scripted fly-through (writes ANSI)
   python3 run.py --snapshot      render one frame, print plain text
+
+The light survival loop (node 5) runs in every mode: hunger/thirst decay over
+real time and can be replenished at restaurants/vendors with the 1 (eat) and
+2 (drink) keys, gated to valid vendor locations by world.interact.
 """
 import argparse
 import sys
 import time
+from dataclasses import dataclass
 
 from . import config
 from .engine.clock import Clock
@@ -19,15 +24,31 @@ from .ui import hud
 from .world import gen
 from .world.entities import LifeSystem
 from .world.grid import TYPE_TABLE
+from .world.interact import Interactor
+from .world.survival import Needs
+
+
+@dataclass
+class Game:
+    grid: object
+    lights: list
+    cam: Camera
+    stars: list
+    moon: tuple
+    life: LifeSystem
+    needs: Needs
+    interactor: Interactor
 
 
 def make_world(seed):
-    grid, lights, spawn = gen.build(seed=seed)
+    city = gen.generate(seed=seed)
     stars = sky.make_stars(seed + 1)
     moon = (0.72, 0.16)
-    cam = Camera(spawn[0], spawn[1], spawn[2])
-    life = LifeSystem(grid, seed=seed)
-    return grid, lights, cam, stars, moon, life
+    cam = Camera(city.spawn[0], city.spawn[1], city.spawn[2])
+    life = LifeSystem(city.grid, seed=seed)
+    needs = Needs()
+    interactor = Interactor(city.grid, city.restaurants)
+    return Game(city.grid, city.lights, cam, stars, moon, life, needs, interactor)
 
 
 def _try_move(cam, grid, dx, dy):
@@ -60,8 +81,24 @@ def update(cam, grid, keys, dt):
         cam.look(-config.LOOK_SPEED * dt)
 
 
-def _render(fb, cam, grid, lights, stars, moon, life=None):
-    renderer.render_frame(fb, cam, grid, lights, stars, moon, TYPE_TABLE, life)
+def handle_needs(game, keys):
+    """Survival actions: eat/drink, gated to valid vendor locations."""
+    needs, inter = game.needs, game.interactor
+    if "eat" in keys:
+        inter.try_eat(needs, game.cam.x, game.cam.y)
+    if "drink" in keys:
+        inter.try_drink(needs, game.cam.x, game.cam.y)
+
+
+def _render(fb, game):
+    renderer.render_frame(fb, game.cam, game.grid, game.lights, game.stars,
+                          game.moon, TYPE_TABLE, game.life)
+
+
+def _draw_hud(fb, game, fps):
+    hud.render(fb, game.cam, fps, "life=%d" % len(game.life.entities),
+               needs=game.needs,
+               near_vendor=game.interactor.at_vendor(game.cam.x, game.cam.y))
 
 
 def run_interactive(seed):
@@ -72,7 +109,7 @@ def run_interactive(seed):
                          width=config.DEFAULT_SIZE[0],
                          height=config.DEFAULT_SIZE[1])
     term.init()
-    grid, lights, cam, stars, moon, life = make_world(seed)
+    game = make_world(seed)
     clock = Clock(config.TARGET_FPS)
     try:
         w, h = term.get_size()
@@ -82,15 +119,16 @@ def run_interactive(seed):
             keys = term.poll_keys()
             if "quit" in keys:
                 break
-            update(cam, grid, keys, dt)
-            life.update(dt)
+            update(game.cam, game.grid, keys, dt)
+            game.life.update(dt)
+            game.needs.tick(dt)
+            handle_needs(game, keys)
             nw, nh = term.get_size()
             if (nw, nh) != (w, h):
                 w, h = nw, nh
                 fb = FrameBuffer(w, h)
-            _render(fb, cam, grid, lights, stars, moon, life)
-            hud.render(fb, cam, clock.smoothed_fps,
-                       "life=%d" % len(life.entities))
+            _render(fb, game)
+            _draw_hud(fb, game, clock.smoothed_fps)
             term.flush(fb.to_ansi(term.color_mode))
             clock.cap()
     finally:
@@ -98,17 +136,17 @@ def run_interactive(seed):
 
 
 def run_snapshot(seed, width, height):
-    grid, lights, cam, stars, moon, life = make_world(seed)
+    game = make_world(seed)
     fb = FrameBuffer(width, height)
-    _render(fb, cam, grid, lights, stars, moon, life)
+    _render(fb, game)
+    _draw_hud(fb, game, config.TARGET_FPS)
     print(fb.to_text())
 
 
 def run_demo(seed, frames, out, width=config.DEFAULT_SIZE[0], height=config.DEFAULT_SIZE[1]):
-    grid, lights, cam, stars, moon, life = make_world(seed)
+    game = make_world(seed)
     fb = FrameBuffer(width, height)
     t0 = time.perf_counter()
-    # scripted path: walk forward, slowly pan, gentle look bob
     total_dt = 1.0 / config.TARGET_FPS
     written = []
     for f in range(frames):
@@ -117,10 +155,11 @@ def run_demo(seed, frames, out, width=config.DEFAULT_SIZE[0], height=config.DEFA
             keys.add("turn_right")
         else:
             keys.add("turn_left")
-        update(cam, grid, keys, total_dt)
-        life.update(total_dt)
-        _render(fb, cam, grid, lights, stars, moon, life)
-        hud.render(fb, cam, config.TARGET_FPS, "life=%d" % len(life.entities))
+        update(game.cam, game.grid, keys, total_dt)
+        game.life.update(total_dt)
+        game.needs.tick(total_dt)
+        _render(fb, game)
+        _draw_hud(fb, game, config.TARGET_FPS)
         written.append(fb.to_ansi("truecolor"))
     dt = time.perf_counter() - t0
     fps = frames / dt

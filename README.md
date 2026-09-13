@@ -28,6 +28,12 @@ The core first-person 3D ASCII renderer is implemented and tested:
   sidewalks/parks. All life is a deterministic seeded cell-walk with
   continuous interpolation and is rendered as fog/light-shaded sprites
   that are correctly occluded by walls (per-column z-buffer).
+- A light survival loop (DESIGN 7.2): hunger and thirst decay by 1 point per
+  60 real seconds (a full bar lasts ~100 minutes); eating/drinking at a
+  restaurant/vendor restores them. Stand at a vendor's sidewalk tables/awning
+  and press 1 (eat a meal, +35 hunger) or 2 (buy a drink, +30 thirst). At
+  <= 20 the HUD bars turn amber; at 0 health drains slowly down to a
+  non-lethal floor -- a reason to stop and sit, never a punishment.
 
 Package layout (`citywalk/`: engine / renderer / world / ui / assets) follows
 DESIGN.md section 5.
@@ -42,9 +48,10 @@ Windows:
 
     run.bat                   # or: python run.py
 
-Controls: WASD move/strafe, Q/E or Left/Right turn, Up/Down look, Esc or
-Ctrl-C quit. Recommended host: Windows Terminal (truecolor); legacy conhost
-works at 256-color.
+Controls: WASD move/strafe, Q/E or Left/Right turn, Up/Down look; when
+standing at a restaurant/vendor, 1 = eat a meal, 2 = buy a drink, Enter =
+interact. Esc or Ctrl-C quit. Recommended host: Windows Terminal (truecolor);
+legacy conhost works at 256-color.
 
 Headless (no TTY, for CI / quick check):
 
@@ -61,9 +68,11 @@ This runs the projection/math unit tests (DDA, floorcast inverse projection,
 palette/glyph/LUT, grid), the moving-life tests (determinism, terrain
 containment, continuous motion, sprite projection + wall occlusion), plus a
 headless smoke test that renders 60 frames and asserts the framebuffer and
-ANSI output are well-formed, and the procedural city generator tests
+ANSI output are well-formed, the procedural city generator tests
 (determinism, street connectivity, building placement, restaurant presence,
-terrain, border containment).
+terrain, border containment), and the survival/interaction tests (decay math,
+replenish clamping, credit economy, non-lethal health drain, and eat/drink
+gated to reachable vendor locations).
 
 ## Layout
 
