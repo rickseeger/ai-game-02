@@ -3,15 +3,16 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "citywalk"
+name = "citywalk2d"
 version = "0.1.0"
-description = "A first-person color-ASCII night-city walkthrough (stdlib only)"
+description = "A 2D top-down color-ASCII city-walk game (stdlib only)"
 requires-python = ">=3.10"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
+dependencies = []
 
 [project.scripts]
-citywalk = "citywalk.__main__:main"
+citywalk2d = "citywalk2d.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["citywalk*"]
+include = ["citywalk2d*"]
