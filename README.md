@@ -23,6 +23,11 @@ The core first-person 3D ASCII renderer is implemented and tested:
   lit-window buildings, terrain elevation (sunken harbor, raised parks), street
   lamps, a Harbor Hotel landmark, and commercial corridors lined with
   restaurants (lit storefront + awning + sidewalk tables/chairs).
+- A moving night-life population (DESIGN 5.5): cars that drive the street
+  grid, pedestrians that walk the sidewalk network, and pets that wander
+  sidewalks/parks. All life is a deterministic seeded cell-walk with
+  continuous interpolation and is rendered as fog/light-shaded sprites
+  that are correctly occluded by walls (per-column z-buffer).
 
 Package layout (`citywalk/`: engine / renderer / world / ui / assets) follows
 DESIGN.md section 5.
@@ -53,10 +58,12 @@ Requires Python 3.10+.
     python3 -m unittest discover -s tests
 
 This runs the projection/math unit tests (DDA, floorcast inverse projection,
-palette/glyph/LUT, grid) plus a headless smoke test that renders 60 frames and
-asserts the framebuffer and ANSI output are well-formed, and the procedural
-city generator tests (determinism, street connectivity, building placement,
-restaurant presence, terrain, border containment).
+palette/glyph/LUT, grid), the moving-life tests (determinism, terrain
+containment, continuous motion, sprite projection + wall occlusion), plus a
+headless smoke test that renders 60 frames and asserts the framebuffer and
+ANSI output are well-formed, and the procedural city generator tests
+(determinism, street connectivity, building placement, restaurant presence,
+terrain, border containment).
 
 ## Layout
 

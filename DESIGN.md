@@ -393,6 +393,30 @@ hud_fg (200,210,220)  hud_warn (255,120,60)  hud_danger (255,60,60)
 - The generator is the only world producer in v1. If a node wants a hand-tuned map, it edits
   gen.py parameters/seed, not a separate map file.
 
+### 5.6 Moving life (cars, pedestrians, pets)
+
+The city is populated by a deterministic ambient population (``world/entities.py``)
+rendered as sprites (``renderer/sprites.py``):
+
+- Kinds: **cars** (asphalt only), **pedestrians** (sidewalk/cobble), **pets**
+  (sidewalk/cobble/grass). Default 96x96 counts: 20 cars, 40 pedestrians, 14 pets,
+  clamped to available cells.
+- Movement: a cell-to-cell random walk interpolated continuously between adjacent
+  cell centers. Each entity only ever occupies terrain legal for its kind, stays
+  in-bounds and non-solid, and needs no collision broadphase or pathfinding --
+  O(population) per frame of cheap arithmetic. Cars mostly go straight and turn at
+  intersections; pedestrians/pets pause occasionally and turn at corners; dead ends
+  reverse. All decisions come from a ``random.Random`` seeded per entity, so a fixed
+  seed reproduces the exact population and motion on Linux and Windows.
+- Rendering: classic Lodev sprite casting through the camera plane. Each billboard is
+  shaded with the same fog + light-pool model as walls/floors and clipped against the
+  per-column wall z-buffer (walls occlude sprites). Cars get roof/window/body bands
+  plus emissive running lights; pedestrians get a head + coat; pets a body + head.
+  Entities behind the camera, inside the near clip, or beyond fog distance are culled.
+- Cost: measured ~0.2 ms/frame for 74 entities at 120x40 headless, leaving the
+  30 fps budget intact. Tests: ``tests/test_entities.py`` (determinism, terrain
+  containment, motion, sprite projection, wall occlusion, headless render).
+
 ---
 
 ## 6. Build, test, and package plan

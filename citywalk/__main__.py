@@ -17,6 +17,7 @@ from .renderer import renderer, sky
 from .renderer.camera import Camera
 from .ui import hud
 from .world import gen
+from .world.entities import LifeSystem
 from .world.grid import TYPE_TABLE
 
 
@@ -25,7 +26,8 @@ def make_world(seed):
     stars = sky.make_stars(seed + 1)
     moon = (0.72, 0.16)
     cam = Camera(spawn[0], spawn[1], spawn[2])
-    return grid, lights, cam, stars, moon
+    life = LifeSystem(grid, seed=seed)
+    return grid, lights, cam, stars, moon, life
 
 
 def _try_move(cam, grid, dx, dy):
@@ -58,8 +60,8 @@ def update(cam, grid, keys, dt):
         cam.look(-config.LOOK_SPEED * dt)
 
 
-def _render(fb, cam, grid, lights, stars, moon):
-    renderer.render_frame(fb, cam, grid, lights, stars, moon, TYPE_TABLE)
+def _render(fb, cam, grid, lights, stars, moon, life=None):
+    renderer.render_frame(fb, cam, grid, lights, stars, moon, TYPE_TABLE, life)
 
 
 def run_interactive(seed):
@@ -70,7 +72,7 @@ def run_interactive(seed):
                          width=config.DEFAULT_SIZE[0],
                          height=config.DEFAULT_SIZE[1])
     term.init()
-    grid, lights, cam, stars, moon = make_world(seed)
+    grid, lights, cam, stars, moon, life = make_world(seed)
     clock = Clock(config.TARGET_FPS)
     try:
         w, h = term.get_size()
@@ -81,12 +83,14 @@ def run_interactive(seed):
             if "quit" in keys:
                 break
             update(cam, grid, keys, dt)
+            life.update(dt)
             nw, nh = term.get_size()
             if (nw, nh) != (w, h):
                 w, h = nw, nh
                 fb = FrameBuffer(w, h)
-            _render(fb, cam, grid, lights, stars, moon)
-            hud.render(fb, cam, clock.smoothed_fps)
+            _render(fb, cam, grid, lights, stars, moon, life)
+            hud.render(fb, cam, clock.smoothed_fps,
+                       "life=%d" % len(life.entities))
             term.flush(fb.to_ansi(term.color_mode))
             clock.cap()
     finally:
@@ -94,14 +98,14 @@ def run_interactive(seed):
 
 
 def run_snapshot(seed, width, height):
-    grid, lights, cam, stars, moon = make_world(seed)
+    grid, lights, cam, stars, moon, life = make_world(seed)
     fb = FrameBuffer(width, height)
-    _render(fb, cam, grid, lights, stars, moon)
+    _render(fb, cam, grid, lights, stars, moon, life)
     print(fb.to_text())
 
 
 def run_demo(seed, frames, out, width=config.DEFAULT_SIZE[0], height=config.DEFAULT_SIZE[1]):
-    grid, lights, cam, stars, moon = make_world(seed)
+    grid, lights, cam, stars, moon, life = make_world(seed)
     fb = FrameBuffer(width, height)
     t0 = time.perf_counter()
     # scripted path: walk forward, slowly pan, gentle look bob
@@ -114,8 +118,9 @@ def run_demo(seed, frames, out, width=config.DEFAULT_SIZE[0], height=config.DEFA
         else:
             keys.add("turn_left")
         update(cam, grid, keys, total_dt)
-        _render(fb, cam, grid, lights, stars, moon)
-        hud.render(fb, cam, config.TARGET_FPS)
+        life.update(total_dt)
+        _render(fb, cam, grid, lights, stars, moon, life)
+        hud.render(fb, cam, config.TARGET_FPS, "life=%d" % len(life.entities))
         written.append(fb.to_ansi("truecolor"))
     dt = time.perf_counter() - t0
     fps = frames / dt

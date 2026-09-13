@@ -52,7 +52,7 @@ def sample_wall(entry, u, v, seed, base, d, lights, wx, wy, wz):
     return glyph, brighten(color, 1.35), color
 
 
-def render(fb, cam, grid, lights, horizon, type_table):
+def render(fb, cam, grid, lights, horizon, type_table, zbuffer=None):
     w, h = fb.width, fb.height
     eye = cam.eye_z()
     for x in range(w):
@@ -61,6 +61,8 @@ def render(fb, cam, grid, lights, horizon, type_table):
         if hit is None:
             continue
         side, mx, my, d, rdx, rdy = hit
+        if zbuffer is not None:
+            zbuffer[x] = d
         type_id, height, fz, seed = grid.get(mx, my)
         entry = type_table.get(type_id)
         if entry is None or not entry.get("solid"):
