@@ -3,6 +3,11 @@ with the type table that maps type_id -> material and behavior (DESIGN 5.2)."""
 from array import array
 
 
+# --- canonical type ids (single source of truth, shared with world.gen) ---
+VOID, BRICK, CONCRETE, GLASS, ASPHALT, SIDEWALK, COBBLE, GRASS, WATER, LAMP = range(10)
+TREE, TABLE, CHAIR, AWNING, FOUNTAIN, SIGN, STOREFRONT = range(10, 17)
+
+
 # type_id -> { name, solid, material, window params, ... }
 TYPE_TABLE = {
     0: {"name": "void", "solid": False},
@@ -20,6 +25,14 @@ TYPE_TABLE = {
     7: {"name": "grass", "solid": False},
     8: {"name": "water", "solid": False},
     9: {"name": "lamp", "solid": False},
+    10: {"name": "tree", "solid": False},
+    11: {"name": "table", "solid": False},
+    12: {"name": "chair", "solid": False},
+    13: {"name": "awning", "solid": False},
+    14: {"name": "fountain", "solid": False},
+    15: {"name": "sign", "solid": False},
+    16: {"name": "storefront", "solid": True, "material": "storefront",
+         "window": False, "lit": 0.70, "warm": True},
 }
 
 

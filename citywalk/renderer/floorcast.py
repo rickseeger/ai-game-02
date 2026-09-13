@@ -3,12 +3,24 @@ fog, and light pools (DESIGN 2.5)."""
 from .. import config
 from ..assets.palettes import PALETTES
 from ..assets.glyphsets import ramp_glyph, luminance
-from .palette import fog, add_rgb
+from .palette import fog, add_rgb, scale
 from .lighting import light_contribution
 
-# floor material name per floor-bearing cell type id (see world/gen.py)
+# floor material name per floor-bearing cell type id (see world/grid.py)
 FLOOR_MATERIAL = {
     4: "asphalt", 5: "sidewalk", 6: "cobble", 7: "grass", 8: "water",
+}
+
+# placeable decor on floor cells: type id -> (glyph, fg palette name).
+# Non-solid markers the floorcaster draws in place of the ramp glyph.
+DECOR = {
+    9: ("*", "lamp_warm"),      # street lamp head
+    10: ("T", "tree"),          # park tree
+    11: ("n", "table"),         # restaurant table
+    12: ("h", "chair"),         # restaurant chair
+    13: ("=", "awning_red"),    # restaurant awning (color varies by cell seed)
+    14: ("0", "neon_cyan"),     # plaza fountain
+    15: ("|", "neon_yellow"),   # district signpost
 }
 
 
@@ -57,19 +69,25 @@ def render(fb, cam, grid, lights, horizon):
             cell = grid.get(cx, cy)
             type_id = cell[0] if cell else 0
             floor_z = cell[2] if cell else 0
+            seed = cell[3] if cell else 0
             mat = FLOOR_MATERIAL.get(type_id, "asphalt")
             base = PALETTES.get(mat, PALETTES["asphalt"])
-            # elevation hint: raised cells shade slightly differently
-            if cell and cell[2] != 0:
-                base = add_rgb(base, (6, 6, 6))
+            # elevation hint: raised cells brighten, sunken cells darken
+            if floor_z > 0:
+                base = add_rgb(base, (6 * floor_z, 6 * floor_z, 6 * floor_z))
+            elif floor_z < 0:
+                base = scale(base, 0.72)
             color = fog(base, row_dist)
             if near:
                 contrib = light_contribution(fx, fy, 0.0, lights)
                 if contrib != (0, 0, 0):
                     color = add_rgb(color, contrib)
-            if type_id == 9:  # lamp marker -> emissive lamp head
-                glyph = "*"
-                fg = PALETTES["lamp_warm"]
+            decor = DECOR.get(type_id)
+            if decor:
+                glyph, fg_name = decor
+                if type_id == 13:  # awning: alternate red/green by cell seed
+                    fg_name = "awning_red" if (seed % 2 == 0) else "awning_green"
+                fg = PALETTES[fg_name]
                 bg = color
             else:
                 lum = luminance(color)

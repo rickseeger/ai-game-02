@@ -17,7 +17,12 @@ The core first-person 3D ASCII renderer is implemented and tested:
 - Wall/window sampling, floor + sky casting, distance fog, light pools, and
   emissive lit windows / moon / stars.
 - Walk/look camera with smooth movement and collision.
-- A seeded night-city demo scene.
+- A seeded, multi-zone procedural night city (DESIGN 5.5): a Manhattan street
+  grid with a connected navigable sidewalk network, concentric zoning
+  (plaza / downtown / midtown / residential / industrial / park / waterfront),
+  lit-window buildings, terrain elevation (sunken harbor, raised parks), street
+  lamps, a Harbor Hotel landmark, and commercial corridors lined with
+  restaurants (lit storefront + awning + sidewalk tables/chairs).
 
 Package layout (`citywalk/`: engine / renderer / world / ui / assets) follows
 DESIGN.md section 5.
@@ -49,7 +54,9 @@ Requires Python 3.10+.
 
 This runs the projection/math unit tests (DDA, floorcast inverse projection,
 palette/glyph/LUT, grid) plus a headless smoke test that renders 60 frames and
-asserts the framebuffer and ANSI output are well-formed.
+asserts the framebuffer and ANSI output are well-formed, and the procedural
+city generator tests (determinism, street connectivity, building placement,
+restaurant presence, terrain, border containment).
 
 ## Layout
 
