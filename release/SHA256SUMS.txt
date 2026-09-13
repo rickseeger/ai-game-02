@@ -1,0 +1,2 @@
+e9075054affbd865c7fc4c9d2420de05d38f22f2cfa1c76e39010fe9c9becb58  release/citywalk2d-linux-x86_64
+bc347232bf2253847e310171367658d56556be4a0c2f75ff94b554d64f5f7ed6  release/citywalk2d-windows-x86_64.exe

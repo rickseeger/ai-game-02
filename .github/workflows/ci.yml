@@ -19,3 +19,45 @@ jobs:
           python-version: "3.12"
       - name: Run test suite
         run: python -m unittest discover -s tests
+
+  package-linux:
+    name: Build Linux binary
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PyInstaller
+        run: python -m pip install pyinstaller
+      - name: Build one-file executable
+        run: pyinstaller --clean --noconfirm citywalk2d.spec
+      - name: Smoke test (headless demo)
+        run: ./dist/citywalk2d --demo --no-color
+      - name: Smoke test (scripted loop)
+        run: printf 'right\nright\ndown\nquit\n' > /tmp/walk.txt && ./dist/citywalk2d --script /tmp/walk.txt --no-color --seed 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: citywalk2d-linux-x86_64
+          path: dist/citywalk2d
+
+  package-windows:
+    name: Build Windows exe
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PyInstaller
+        run: python -m pip install pyinstaller
+      - name: Build one-file exe
+        run: pyinstaller --clean --noconfirm citywalk2d.spec
+      - name: Smoke test the exe (headless)
+        run: .\dist\citywalk2d.exe --demo --no-color
+      - uses: actions/upload-artifact@v4
+        with:
+          name: citywalk2d-windows-x86_64
+          path: dist/citywalk2d.exe

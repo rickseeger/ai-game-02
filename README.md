@@ -148,7 +148,32 @@ frames = run_script(                                  # drive a scripted walk
 print(player.position, "in", frames, "frames")
 ```
 
-## Run
+## Install & run
+
+Two ways to run the game: use a prebuilt standalone binary (no Python needed),
+or run from source (Python 3.10+).
+
+### Prebuilt binaries (recommended — no Python required)
+
+Standalone one-file executables are committed under `release/` and run with no
+dependencies installed.
+
+Linux x86-64:
+
+```
+chmod +x release/citywalk2d-linux-x86_64
+./release/citywalk2d-linux-x86_64
+```
+
+Windows x86-64: double-click `release\citywalk2d-windows-x86_64.exe` (a
+console app; Windows Terminal recommended). On first run SmartScreen may warn
+because the exe is unsigned — choose "More info" -> "Run anyway".
+
+SHA-256 checksums are in `release/SHA256SUMS.txt`; see `release/README.md` for
+verification and headless modes. Both binaries are rebuilt cleanly from source
+by the `package` jobs in `.github/workflows/ci.yml` (see `citywalk2d.spec`).
+
+### Run from source (needs Python 3.10+)
 
 Play interactively (WASD / arrow keys to move, `q` / Esc / Ctrl-C to quit):
 
@@ -198,5 +223,8 @@ python3 -m unittest discover -s tests
 Grid model, building facades, player movement, keyboard input mapping,
 renderer/camera, and the assembled game loop (engine) are implemented and
 covered by unit tests -- including an integration test that drives a scripted
-walk around the city. The HUD (ui) remains owned by a later node in tree
+walk around the city. Cross-platform packaging (node 8) ships prebuilt
+Linux and Windows one-file executables under `release/`, with reproducible
+PyInstaller builds in CI. The HUD (ui) remains owned by a later node in tree
 G10.
+
