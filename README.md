@@ -8,8 +8,7 @@ This is a clean scaffold for the 2D game. The previous 3D raycast
 ## Stack
 
 Python 3.10+ standard library only — zero third-party dependencies. The game
-is terminal-based color ASCII; the renderer and game subsystems land in later
-nodes.
+is terminal-based color ASCII.
 
 ## Layout
 
@@ -21,7 +20,7 @@ citywalk2d/
   engine/          main loop, clock, state   (reserved)
   input/           keyboard input (WASD/arrows -> Action)
   world/           grid model (grid.py), facades, player
-  renderer/        top-down ASCII output     (reserved)
+  renderer/        color-ASCII frame buffer, camera, scene renderer
   ui/              HUD and overlays          (reserved)
 tests/             stdlib unittest suite
 run.py             cross-platform launcher
@@ -93,6 +92,40 @@ to `Action.QUIT`. The byte -> action table is pure and deterministic and is
 covered by `tests/test_input.py`; the raw terminal reading itself
 (termios / msvcrt) must be exercised interactively on a real keyboard.
 
+## Renderer and camera
+
+The renderer lives in `citywalk2d/renderer`. It composes the city grid,
+building facades, and player into a single ANSI 256-color top-down frame, and
+a camera follows the player with a viewport window clamped to the map edge.
+
+```python
+from citywalk2d.renderer import Camera, render
+from citywalk2d.world import assign_facades, generate_city, spawn_player
+
+city = generate_city(seed=42)
+facades = assign_facades(city)
+player = spawn_player(city, seed=23)
+
+print(render(city, facades, player))                  # 80x24 window
+print(render(city, facades, player, viewport_width=40, viewport_height=20))
+```
+
+`render(...)` returns a string; `render_frame(...)` returns the underlying
+`FrameBuffer` (a grid of `Cell` values, each one character plus optional
+256-color foreground/background) for callers that want to compose before
+serializing. The camera is exposed directly too:
+
+```python
+px, py = player.position
+camera = Camera.centered_on(px, py, 40, 20, city.width, city.height)
+```
+
+Every cell type has a distinct look: streets are painted asphalt, block
+interiors are concrete, buildings carry their seeded facade pattern and color,
+and the player is a highlighted `@`. Reference renders are saved under
+`docs/` (`reference_render.txt` and `reference_render_viewport.txt` hold the
+ANSI frames; the `_plain` variants are human-readable and strip the escapes).
+
 ## Run
 
 Linux / macOS:
@@ -127,6 +160,6 @@ python3 -m unittest discover -s tests
 
 ## Status
 
-Grid model, building facades, player movement, and keyboard input mapping
-are implemented and covered by unit tests. The renderer and the main game
-loop are owned by later nodes in tree G10.
+Grid model, building facades, player movement, keyboard input mapping, and
+renderer/camera are implemented and covered by unit tests. The main game
+loop (engine) and HUD (ui) are owned by later nodes in tree G10.
