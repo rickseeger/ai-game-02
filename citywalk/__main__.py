@@ -7,7 +7,11 @@ Modes:
 
 The light survival loop (node 5) runs in every mode: hunger/thirst decay over
 real time and can be replenished at restaurants/vendors with the 1 (eat) and
-2 (drink) keys, gated to valid vendor locations by world.interact.
+2 (drink) keys, gated to valid vendor locations by world.interact. The primary
+mission (node 6, DESIGN 7.3) runs alongside it: "Find Maya at the rooftop
+garden of the Harbor Hotel" -- walk to the hotel (tracked by a compass hint),
+then press Enter to ride up to the rooftop garden and Enter again to talk to
+Maya and complete the mission for a credit reward.
 """
 import argparse
 import sys
@@ -25,6 +29,7 @@ from .world import gen
 from .world.entities import LifeSystem
 from .world.grid import TYPE_TABLE
 from .world.interact import Interactor
+from .world.quests import FIND_MAYA, Quest
 from .world.survival import Needs
 
 
@@ -38,6 +43,7 @@ class Game:
     life: LifeSystem
     needs: Needs
     interactor: Interactor
+    quest: Quest
 
 
 def make_world(seed):
@@ -48,7 +54,11 @@ def make_world(seed):
     life = LifeSystem(city.grid, seed=seed)
     needs = Needs()
     interactor = Interactor(city.grid, city.restaurants)
-    return Game(city.grid, city.lights, cam, stars, moon, life, needs, interactor)
+    target = city.rooftop or city.landmark or (city.spawn[0], city.spawn[1])
+    quest = Quest(FIND_MAYA, target)
+    needs.set_message(quest.intro)
+    return Game(city.grid, city.lights, cam, stars, moon, life, needs,
+                interactor, quest)
 
 
 def _try_move(cam, grid, dx, dy):
@@ -90,6 +100,36 @@ def handle_needs(game, keys):
         inter.try_drink(needs, game.cam.x, game.cam.y)
 
 
+def _mission_status(quest, cam):
+    """One-line mission readout: clock + objective + compass hint."""
+    if quest.is_complete():
+        return "MISSION COMPLETE"
+    obj = quest.objective
+    if quest.stage_id == "find_hotel":
+        hint = quest.compass_hint(cam.x, cam.y)
+        if hint and hint[1] > 0:
+            d, blocks = hint
+            return "[%s] Maya: %s  (%s %dblk)" % (quest.clock_text(), obj, d, blocks)
+    return "[%s] Maya: %s" % (quest.clock_text(), obj)
+
+
+def update_quest(game, keys):
+    """Mission progression: position-driven stage 1, interact stages 2/3."""
+    quest, needs = game.quest, game.needs
+    event = quest.on_position(game.cam.x, game.cam.y)
+    if event:
+        needs.set_message(event)
+    if "interact" in keys:
+        event = quest.on_interact(game.cam.x, game.cam.y)
+        if event:
+            reward = quest.collect_reward()
+            if reward:
+                needs.credits += reward
+                needs.set_message("%s  (+%d credits)" % (event, reward))
+            else:
+                needs.set_message(event)
+
+
 def _render(fb, game):
     renderer.render_frame(fb, game.cam, game.grid, game.lights, game.stars,
                           game.moon, TYPE_TABLE, game.life)
@@ -98,7 +138,8 @@ def _render(fb, game):
 def _draw_hud(fb, game, fps):
     hud.render(fb, game.cam, fps, "life=%d" % len(game.life.entities),
                needs=game.needs,
-               near_vendor=game.interactor.at_vendor(game.cam.x, game.cam.y))
+               near_vendor=game.interactor.at_vendor(game.cam.x, game.cam.y),
+               mission=_mission_status(game.quest, game.cam))
 
 
 def run_interactive(seed):
@@ -122,7 +163,11 @@ def run_interactive(seed):
             update(game.cam, game.grid, keys, dt)
             game.life.update(dt)
             game.needs.tick(dt)
+            event = game.quest.tick(dt)
+            if event:
+                game.needs.set_message(event)
             handle_needs(game, keys)
+            update_quest(game, keys)
             nw, nh = term.get_size()
             if (nw, nh) != (w, h):
                 w, h = nw, nh
@@ -158,6 +203,10 @@ def run_demo(seed, frames, out, width=config.DEFAULT_SIZE[0], height=config.DEFA
         update(game.cam, game.grid, keys, total_dt)
         game.life.update(total_dt)
         game.needs.tick(total_dt)
+        event = game.quest.tick(total_dt)
+        if event:
+            game.needs.set_message(event)
+        update_quest(game, set())   # demo: no manual interact, just walking
         _render(fb, game)
         _draw_hud(fb, game, config.TARGET_FPS)
         written.append(fb.to_ansi("truecolor"))

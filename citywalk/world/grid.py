@@ -6,6 +6,7 @@ from array import array
 # --- canonical type ids (single source of truth, shared with world.gen) ---
 VOID, BRICK, CONCRETE, GLASS, ASPHALT, SIDEWALK, COBBLE, GRASS, WATER, LAMP = range(10)
 TREE, TABLE, CHAIR, AWNING, FOUNTAIN, SIGN, STOREFRONT = range(10, 17)
+ROOFTOP = 17
 
 
 # type_id -> { name, solid, material, window params, ... }
@@ -33,6 +34,7 @@ TYPE_TABLE = {
     15: {"name": "sign", "solid": False},
     16: {"name": "storefront", "solid": True, "material": "storefront",
          "window": False, "lit": 0.70, "warm": True},
+    17: {"name": "rooftop_garden", "solid": False},
 }
 
 

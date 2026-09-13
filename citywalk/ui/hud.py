@@ -5,7 +5,9 @@ The bars turn amber at <= NEED_LOW and red when empty -- the "gentle hint" of
 the light survival loop (DESIGN 7.2). A short transient message (eat/drink
 feedback, "find a restaurant") is drawn between the two zones when present, and
 a persistent vendor prompt ``[1] eat meal  [2] buy drink`` shows whenever the
-player is within interact range of a vendor.
+player is within interact range of a vendor, and the active mission objective
+(clock + compass hint) is shown in the center gap when nothing more urgent is
+on screen.
 
 The framebuffer is ASCII-only (single-byte glyphs, tests enforce 0x20..0x7E),
 so the bars use '#' (filled) and '.' (empty) rather than block glyphs.
@@ -55,7 +57,8 @@ def _text(fb, x, y, s, color):
     _draw_cells(fb, x, y, [(c, color) for c in s])
 
 
-def render(fb, cam, fps, clock_text="", needs=None, near_vendor=False):
+def render(fb, cam, fps, clock_text="", needs=None, near_vendor=False,
+           mission=None):
     w = fb.width
     fg = PALETTES["hud_fg"]
     warn = PALETTES["hud_warn"]
@@ -63,7 +66,7 @@ def render(fb, cam, fps, clock_text="", needs=None, near_vendor=False):
     for i in range(w):
         fb.set(i, 0, " ", fg, black)
 
-    left = " CITYWALK  pos=(%.1f,%.1f)  fps=%d %s" % (
+    left = " CITYWALK (%.0f,%.0f) f%d %s " % (
         cam.x, cam.y, int(fps), clock_text)
     _text(fb, 0, 0, left, fg)
 
@@ -73,13 +76,23 @@ def render(fb, cam, fps, clock_text="", needs=None, near_vendor=False):
         status_w = sum(len(ch) for ch, _ in status)
         _draw_cells(fb, w - status_w, 0, status)
 
-    msg = ""
-    if needs is not None and needs.message:
-        msg = needs.message
-    elif near_vendor:
-        msg = "[1] eat meal  [2] buy drink"
-    if msg:
-        text = " " + msg + " "
+    # center gap, in priority order: transient message, then the persistent
+    # mission objective, then the vendor prompt. If a transient message is
+    # too long for the gap, fall back to the mission so the tracked objective
+    # stays visible.
+    def draw_gap(text, color):
+        if text is None:
+            return False
         x = len(left) + 1
         if x + len(text) <= w - status_w - 1:
-            _text(fb, x, 0, text, warn)
+            _text(fb, x, 0, text, color)
+            return True
+        return False
+
+    if needs is not None and needs.message:
+        if not draw_gap(" " + needs.message + " ", warn) and mission:
+            draw_gap(" " + mission + " ", PALETTES["neon_yellow"])
+    elif mission:
+        draw_gap(" " + mission + " ", PALETTES["neon_yellow"])
+    elif near_vendor:
+        draw_gap(" [1] eat meal  [2] buy drink ", warn)

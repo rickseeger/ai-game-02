@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 
 from .grid import (Grid, BRICK, CONCRETE, GLASS, ASPHALT, SIDEWALK,
                    COBBLE, GRASS, WATER, LAMP, TREE, TABLE, CHAIR, AWNING,
-                   FOUNTAIN, SIGN, STOREFRONT)
+                   FOUNTAIN, SIGN, STOREFRONT, ROOFTOP)
 
 # --- zones ----------------------------------------------------------------
 PLAZA = "plaza"
@@ -65,6 +65,7 @@ class City:
     restaurants: list
     blocks: list          # list[(x0, y0, x1, y1, zone)]
     landmark: tuple       # (x, y) of the Harbor Hotel, or None
+    rooftop: tuple        # (x, y) of the rooftop-garden entrance, or None
 
 
 # --- geometry helpers ------------------------------------------------------
@@ -321,9 +322,16 @@ def _fill_developed(g, x0, y0, x1, y1, zone, rng, restaurants, elev):
 
 
 def _place_landmark(g, blocks, rng):
+    """The Harbor Hotel landmark plus its rooftop-garden entrance (node 6).
+
+    Returns ``(landmark, rooftop)``: the hotel's center coordinate and the
+    walkable rooftop-garden cell immediately south of it (the city-facing
+    entrance where Maya is), or ``(None, None)`` when the world has no
+    waterfront block.
+    """
     waterfront = [b for b in blocks if b[4] == WATERFRONT]
     if not waterfront:
-        return None
+        return None, None
     w = g.w
     target = min(waterfront, key=lambda b: abs(((b[0] + b[2]) / 2.0) - w / 2.0))
     x0, y0, x1, y1, _ = target
@@ -334,7 +342,26 @@ def _place_landmark(g, blocks, rng):
             if g.in_bounds(xx, yy) and g.type_of(xx, yy) in (COBBLE, GRASS):
                 g.set(xx, yy, GLASS, height=rng.randint(12, 15),
                       seed=rng.randrange(65536))
-    return (cx, (y0 + y1) // 2)
+    rooftop = _hotel_entrance(g, cx, half, y1)
+    if rooftop is not None:
+        g.set(rooftop[0], rooftop[1], ROOFTOP)
+    return (cx, (y0 + y1) // 2), rooftop
+
+
+def _hotel_entrance(g, cx, half, y1):
+    """Walkable rooftop-garden cell immediately south of the hotel.
+
+    The hotel's south face is the row just above ``y1 - 1``; the entrance
+    cell sits directly below it on the city side (the side the player
+    approaches from). Falls back outward across the hotel's width when the
+    center column is not a plain walkable floor cell.
+    """
+    south = y1 - 1
+    for dx in range(0, half + 3):
+        for sx in (cx - dx, cx + dx):
+            if g.in_bounds(sx, south) and g.type_of(sx, south) in (COBBLE, SIDEWALK, GRASS):
+                return (sx, south)
+    return None
 
 
 def _street_lamps(g, vstreets, hstreets, rng):
@@ -406,13 +433,16 @@ def generate(seed=20260913, w=DEFAULT_SIZE, h=DEFAULT_SIZE):
             _fill_developed(g, x0, y0, x1, y1, zone, rng, restaurants,
                             _zone_elevation(zone))
 
-    landmark = _place_landmark(g, blocks, rng)
+    landmark, rooftop = _place_landmark(g, blocks, rng)
     lights += _street_lamps(g, vstreets, hstreets, rng)
     for r in restaurants:
         lights.append((r.x + r.w / 2.0, r.y + 0.5, 0.3, 255, 170, 90, 3.0, 0.9))
+    if rooftop is not None:
+        rx, ry = rooftop
+        lights.append((rx + 0.5, ry + 0.5, 0.3, 80, 255, 140, 3.0, 0.8))
 
     spawn = _spawn(g, blocks, rng)
-    return City(seed, g, lights, spawn, restaurants, blocks, landmark)
+    return City(seed, g, lights, spawn, restaurants, blocks, landmark, rooftop)
 
 
 def build(seed=20260913, w=DEFAULT_SIZE, h=DEFAULT_SIZE):

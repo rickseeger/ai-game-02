@@ -44,3 +44,11 @@ HEALTH_FLOOR = 25.0           # no death by starvation in v1
 FREE_SAMPLES = 4              # free vendor samples keep the economy trivial
 INTERACT_RANGE = 1.6          # cells from a vendor serving cell to interact
 MESSAGE_TTL = 2.5             # seconds a transient HUD message stays visible
+
+# --- Mission (DESIGN 7.3) ------------------------------------------------
+MISSION_HOTEL_RANGE = 3.0         # cells from the rooftop-garden entrance to "find" the hotel
+MISSION_REWARD = 50               # credits awarded when the mission completes
+MISSION_BLOCK_CELLS = 14.0        # approx. cells per block, for the "N blocks" compass hint
+MISSION_START_HOUR = 22           # in-game clock starts at 10:00 PM
+MISSION_DEADLINE_HOUR = 26        # 2:00 AM soft deadline (never a game-over)
+MISSION_MINUTES_PER_REAL_SECOND = 0.2   # 4 in-game hours ~ 20 real minutes

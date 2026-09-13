@@ -34,6 +34,15 @@ The core first-person 3D ASCII renderer is implemented and tested:
   and press 1 (eat a meal, +35 hunger) or 2 (buy a drink, +30 thirst). At
   <= 20 the HUD bars turn amber; at 0 health drains slowly down to a
   non-lethal floor -- a reason to stop and sit, never a punishment.
+- A primary mission (DESIGN 7.3): "Find Maya at the rooftop garden of the
+  Harbor Hotel before 2:00 AM." The HUD tracks a three-stage objective:
+  (1) walk to the Harbor Hotel -- a compass hint (direction + blocks) points
+  the way; (2) press Enter at the glowing rooftop-garden entrance on the
+  hotel's city side to ride up; (3) press Enter again to talk to Maya and
+  complete the mission for +50 credits. The 2:00 AM deadline is a soft fail:
+  past it, Maya "has gone home" and the mission gently resets -- a reason to
+  try again, never a game-over. The mission composes with the survival loop
+  (the reward lands in the same credit wallet).
 
 Package layout (`citywalk/`: engine / renderer / world / ui / assets) follows
 DESIGN.md section 5.
@@ -50,8 +59,9 @@ Windows:
 
 Controls: WASD move/strafe, Q/E or Left/Right turn, Up/Down look; when
 standing at a restaurant/vendor, 1 = eat a meal, 2 = buy a drink, Enter =
-interact. Esc or Ctrl-C quit. Recommended host: Windows Terminal (truecolor);
-legacy conhost works at 256-color.
+interact (at the Harbor Hotel this rides to the rooftop and talks to Maya).
+Esc or Ctrl-C quit. Recommended host: Windows Terminal (truecolor); legacy
+conhost works at 256-color.
 
 Headless (no TTY, for CI / quick check):
 

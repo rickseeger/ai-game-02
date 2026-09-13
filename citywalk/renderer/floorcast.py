@@ -9,6 +9,7 @@ from .lighting import light_contribution
 # floor material name per floor-bearing cell type id (see world/grid.py)
 FLOOR_MATERIAL = {
     4: "asphalt", 5: "sidewalk", 6: "cobble", 7: "grass", 8: "water",
+    17: "cobble",
 }
 
 # placeable decor on floor cells: type id -> (glyph, fg palette name).
@@ -21,6 +22,7 @@ DECOR = {
     13: ("=", "awning_red"),    # restaurant awning (color varies by cell seed)
     14: ("0", "neon_cyan"),     # plaza fountain
     15: ("|", "neon_yellow"),   # district signpost
+    17: ("@", "neon_green"),    # Maya's rooftop garden (mission target)
 }
 
 
